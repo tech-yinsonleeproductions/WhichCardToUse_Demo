@@ -1,65 +1,78 @@
 // app/api/card-decision/route.js
 
 export async function POST(req) {
+
   const { category } = await req.json(); // Get the category from the request body
 
-  const cards = {
-    CardA: {
-      name: 'Visa Infinite',
-      diningMultiplier: 5, // Dining: 5x
-      foreignCurrencyMultiplier: 10, // Foreign currency: 10x
-      otherMultiplier: 1, // Other categories: 1x
-      transferRate: 7.4,  // Transfer rate for Card A
-    },
-    CardB: {
-      name: 'World',
-      eWalletTopupMultiplier: 3, // E-Wallet topup: 3x
-      otherMultiplier: 1, // Other categories: 1x
-      transferRate: 1,  // Transfer rate for Card B
-    },
-    CardC: {
-      name: 'Amex',
-      onlineSpendingMultiplier: 0.5, // Online: 0.5x
-      singaporeAirlinesMultiplier: 1, // Singapore Airlines: 1x
-      foreignCurrencyMultiplier: 0.5, // Foreign currency: 0.5x
-      otherMultiplier: 1 / 2.5, // Other categories: 1/2.5x
-      transferRate: 1, // Transfer rate for Card C
-    }
-  };
-
+  
   const getBestCard = (category) => {
+    
+    const cards = {
+      CardA: {
+        name: 'Visa Infinite',
+        multipliers: {
+          Dining: 5,
+          ForeignCurrency: 10,
+        },
+        transferRate: 7.4
+      },
+      CardB: {
+        name: 'World',
+        multipliers: {
+          EWalletTopup: 3,  
+        },
+        transferRate: 7.4
+      },
+      CardC: {
+        name: 'Amex',
+        multipliers: {
+          Dining: 1 / 2.5,       
+          ForeignCurrency: 0.5,  
+          EWalletTopup: 0,       
+          OnlineSpending: 0.5,   
+        },
+        transferRate: 1
+      }
+    };
+
     let bestCard = null;
     let maxPointsPerDollar = 0;
 
-    // Logic to select the best card based on the category
-    if (category === 'Dining') {
-      bestCard = (cards.CardA.diningMultiplier / cards.CardA.transferRate) > maxPointsPerDollar ? cards.CardA : bestCard;
-    } else if (category === 'ForeignCurrency') {
-      bestCard = (cards.CardA.foreignCurrencyMultiplier / cards.CardA.transferRate) > maxPointsPerDollar ? cards.CardA : bestCard;
-      bestCard = (cards.CardB.foreignCurrencyMultiplier / cards.CardB.transferRate) > maxPointsPerDollar ? cards.CardB : bestCard;
-      bestCard = (cards.CardC.foreignCurrencyMultiplier / cards.CardC.transferRate) > maxPointsPerDollar ? cards.CardC : bestCard;
-    } else if (category === 'EWalletTopup') {
-      bestCard = (cards.CardB.eWalletTopupMultiplier / cards.CardB.transferRate) > maxPointsPerDollar ? cards.CardB : bestCard;
-    } else if (category === 'OnlineSpending') {
-      bestCard = (cards.CardC.onlineSpendingMultiplier / cards.CardC.transferRate) > maxPointsPerDollar ? cards.CardC : bestCard;
-    } else {
-      bestCard = (cards.CardA.otherMultiplier / cards.CardA.transferRate) > maxPointsPerDollar ? cards.CardA : bestCard;
-      bestCard = (cards.CardB.otherMultiplier / cards.CardB.transferRate) > maxPointsPerDollar ? cards.CardB : bestCard;
-      bestCard = (cards.CardC.otherMultiplier / cards.CardC.transferRate) > maxPointsPerDollar ? cards.CardC : bestCard;
+    // Loop through all the cards and calculate points per dollar based on the selected category
+    for (const cardKey in cards) {
+      const card = cards[cardKey];
+
+      const multiplier = card.multipliers[category] ?? 1;  // Retrieve the multiplier for the selected category (fall back to '1' if not specified)
+
+      if (multiplier === 0) continue; // Skip this card if the multiplier is 0 (no points for this category)
+
+      const pointsPerDollar = multiplier / card.transferRate; // Calculate the points per dollar for each card based on the selected category
+
+      // If the current card offers more points per dollar, update the bestCard
+      if (pointsPerDollar > maxPointsPerDollar) {
+        maxPointsPerDollar = pointsPerDollar;
+        bestCard = card;
+      }
     }
 
     return bestCard;
   };
 
-  const bestCard = getBestCard(category);
 
+  const bestCard = getBestCard(category);
+  
+
+  // Return the response based on whether we found the best card
   if (bestCard) {
-    return new Response(JSON.stringify({
-      bestCard: bestCard.name,
-      multiplier: bestCard.diningMultiplier || bestCard.foreignCurrencyMultiplier || bestCard.otherMultiplier,
-      transferRate: bestCard.transferRate,
-    }), { status: 200 });
+    return new Response(
+      JSON.stringify({
+        bestCard: bestCard.name,
+        multiplier: bestCard.multipliers[category] ?? 1, // Return the multiplier for the selected category, defaulting to 1
+        transferRate: bestCard.transferRate,
+      }),
+      { status: 200 }
+    );
   } else {
-    return new Response(JSON.stringify({ error: 'Invalid category' }), { status: 400 });
+    return new Response(JSON.stringify({ error: 'Invalid category or no points for this category' }), { status: 400 });
   }
 }

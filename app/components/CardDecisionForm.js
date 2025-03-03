@@ -1,9 +1,12 @@
-'use client'; // Marking this as a client-side component
+'use client'; 
 
 import React, { useState } from 'react';
 import axios from 'axios';
 
+
 const CardDecisionForm = () => {
+
+
   const [category, setCategory] = useState('');
   const [bestCard, setBestCard] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -37,22 +40,29 @@ const CardDecisionForm = () => {
 
   return (
     <div>
+      
       <h1 className="text-2xl mb-4">Which Card to Use?</h1>
+
       <form onSubmit={handleSubmit} className="space-y-4">
+
         <div>
           <label htmlFor="category" className="block">Select a Category:</label>
+
           <select
             id="category"
             value={category}
             onChange={handleCategoryChange}
             className="border p-2"
           >
+        
             <option value="">--Choose a Category--</option>
             <option value="Dining">Dining</option>
             <option value="ForeignCurrency">Foreign Currency</option>
             <option value="EWalletTopup">E-Wallet Topup</option>
             <option value="OnlineSpending">Online Spending</option>
+
           </select>
+
         </div>
 
         <button
@@ -60,9 +70,13 @@ const CardDecisionForm = () => {
           disabled={loading}
           className="bg-blue-500 text-white p-2 rounded"
         >
+
           {loading ? 'Loading...' : 'Get Best Card'}
+
         </button>
+
       </form>
+
 
       {error && <div className="text-red-500">{error}</div>}
 
@@ -77,5 +91,7 @@ const CardDecisionForm = () => {
     </div>
   );
 };
+
+
 
 export default CardDecisionForm;
